@@ -31,39 +31,12 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
             targetArray.append(item[1:])
             answersTargetArray.append(item[0])
 
-def activationLayer(input: list[int], activationFunction: str) -> list:
-    """
-    Takes a layer and applies a specified activation function to the entire layer, outputting the activated layer
-
-    Parameters
-    ----------
-    input               : Unactivated layer needing to be passed through an activation layer
-    activationFunction  : Choice of activation function (ReLU, Leaky ReLU, Logistic Sigmoid, Softmax)
-
-    Returns
-    -------
-    Layer activated with specified function
-    """
-
-    if activationFunction == 'ReLU':
-        for i in range(len(input)): input[i] = max(0, input[i])
-    
-    elif activationFunction == 'Leaky ReLU':
-        for i in range(len(input)): input[i] = max(0.01*input[i], input[i])
-    
-    elif activationFunction == 'Logistic Sigmoid':
-        for i in range(len(input)): input[i] = 1/(1+math.exp(-input[i]))
-    
-    elif activationFunction == 'Softmax':
-        allExponentials = []
-        allExponentialsSum = 0
-        for i in range(len(input)):
-            ea = math.exp(input[i])
-            allExponentials.append(ea)
-            allExponentialsSum += ea
-        for i in range(len(input)): input[i] = allExponentials[i]/allExponentialsSum
-
-    return input
+def oneHot(number, listLength):
+    output = []
+    for i in range(listLength):
+        if number == i: output.append(1)
+        else: output.append(0)
+    return output
 
 class Layer():
     """
@@ -101,43 +74,97 @@ class Layer():
         self.weights = weights
         self.biases = biases
     
-    def forwardPropagation(self, inputs: list[int], activationFunction: str):
+    def forwardPropagation(self, inputs: list[float]):
         """
         Method for forward propagation of the neural network at the current layer
 
         Parameters
         ----------
         inputs              : The input layer
-        activationFunction  : Choice of activation function (ReLU, Leaky ReLU, Logistic Sigmoid, Softmax)
 
         Outputs
         --------
         self.output         : The vector output of the layer, accessible with self.output
         """
         output = []
-        
+
         for i in range(self.nNeurons):
             outputBatch = 0
             for x in range(len(inputs)): outputBatch += inputs[x] * self.weights[i][x]
             output.append(outputBatch + self.biases[i])
         
-        self.output = activationLayer(output, activationFunction)
+        
 
-inputLayer = [255,84,0,0,15]
+        self.output = output
 
-h1 = Layer(len(inputLayer),5)
-h1.forwardPropagation(inputLayer, 'Logistic Sigmoid')
+class activationLayer():
+    def __init__(self, inputArray: list[float], activationFunction: str = ''):
+        outputArray = []
+        activationFunction = activationFunction.lower()
+        if activationFunction == '':
+            self.output = inputArray
+            return
 
-h2 = Layer(len(h1.output),5)
-h2.forwardPropagation(h1.output, 'ReLU')
+        if activationFunction == 'relu':
+            for i in range(len(inputArray)): outputArray.append(inputArray[i]) if inputArray[i] > 0 else outputArray.append(0)
 
-outputLayer = Layer(len(h2.output), 2)
-outputLayer.forwardPropagation(h2.output, 'Softmax')
+        elif activationFunction == 'leaky relu':
+            for i in range(len(inputArray)): outputArray.append(inputArray[i]) if inputArray[i] > 0 else outputArray.append(0.01*inputArray[i])
 
-print('Input Layer')
-print(inputLayer)
-print('\nHidden Layer 1')
-for i in range(len(h1.weights)): print(f'Neuron {i}: {h1.weights[i]}x + {h1.biases[i]}')
-print('\nHidden Layer 2')
-for i in range(len(h2.weights)): print(f'Neuron {i}: {h2.weights[i]}x + {h2.biases[i]}')
-print(f'\nOutput: {outputLayer.output}\n')
+        elif activationFunction == 'logistic sigmoid':
+            for i in range(len(inputArray)): outputArray.append(1/(1+math.exp(inputArray[i])))
+
+        elif activationFunction == 'softmax':
+            allExponentials = []
+            allExponentialsSum = 0
+            for i in range(len(inputArray)):
+                ea = math.exp(inputArray[i])
+                allExponentials.append(ea)
+                allExponentialsSum += ea
+            for i in range(len(inputArray)): outputArray.append(allExponentials[i]/allExponentialsSum)
+        
+        self.output = outputArray
+
+# XOR gate truth table
+truthTable = [
+    [0,0,0],
+    [0,1,1],
+    [1,0,1],
+    [1,1,0]
+]
+
+data = []
+answers = []
+
+print('Truth Table')
+for i in range(len(truthTable)):
+    data.append(truthTable[i][0:2])
+    answers.append(truthTable[i][2])
+    print(truthTable[i])
+print()
+
+# For understanding back propagation
+for i in range(1):
+
+    # 1 pass through
+    inputLayer = data[i]
+    expectedOutputLayer = answers[i]
+
+    h1 = Layer(len(inputLayer), 2)
+    h1.forwardPropagation(inputLayer)
+    z1 = activationLayer(h1.output, 'ReLU')
+
+    outputLayer = Layer(len(z1.output), 2)
+    outputLayer.forwardPropagation(z1.output)
+    output = activationLayer(outputLayer.output, 'Softmax')
+
+    answer = oneHot(expectedOutputLayer, 2)
+
+    print(f'Output: {output.output}, Expected Answer: {answer}\n')
+
+    # Calculate Cost
+    cost = 0
+    for n in range(len(output.output)):
+        cost += (output.output[n]-answer[n]) ** 2
+    
+    print(f'Cost: {cost}')
