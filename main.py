@@ -1,7 +1,7 @@
 import csv, random, time, os, math
 
-if os.name == 'nt': os.system('cls')
-elif os.name == 'posix': os.system('clear')
+# if os.name == 'nt': os.system('cls')
+# elif os.name == 'posix': os.system('clear')
 
 data = []
 answers = []
@@ -58,15 +58,10 @@ class Layer():
     def __init__(self, nInputs: int, nNeurons: int):
 
         # Generate a matrix of weights with nInputs width and nNeurons height
-        weights = []
-        for i in range(nNeurons):
-            weightsBatch = []
-            for x in range(nInputs): weightsBatch.append(0.025*random.uniform(-0.5,0.5))
-            weights.append(weightsBatch)
+        weights = [[0.025*random.uniform(-0.5,0.5) for x in range(nInputs)] for y in range(nNeurons)]
         
         # Generate a vector of biases with length nNeurons
-        biases = []
-        for i in range(nNeurons): biases.append(random.uniform(-0.5,0.5))
+        biases = [random.uniform(-0.5,0.5) for i in range(nNeurons)]
 
         # Make them accessible by the class object
         self.nInputs = nInputs
@@ -91,39 +86,38 @@ class Layer():
         for i in range(self.nNeurons):
             outputBatch = 0
             for x in range(len(inputs)): outputBatch += inputs[x] * self.weights[i][x]
+
+            # Need to test if enum is faster
+            # for x, value in enumerate(inputs): outputBatch += value * self.weights[i][x]
+            
             output.append(outputBatch + self.biases[i])
         
-        
-
         self.output = output
 
 class activationLayer():
     def __init__(self, inputArray: list[float], activationFunction: str = ''):
-        outputArray = []
         activationFunction = activationFunction.lower()
+        
         if activationFunction == '':
             self.output = inputArray
             return
 
         if activationFunction == 'relu':
-            for i in range(len(inputArray)): outputArray.append(inputArray[i]) if inputArray[i] > 0 else outputArray.append(0)
+            self.output = [i if i > 0 else 0 for i in inputArray]
+            return
 
         elif activationFunction == 'leaky relu':
-            for i in range(len(inputArray)): outputArray.append(inputArray[i]) if inputArray[i] > 0 else outputArray.append(0.01*inputArray[i])
+            self.output = [i if i > 0 else 0.01*i for i in inputArray]
+            return
 
         elif activationFunction == 'logistic sigmoid':
-            for i in range(len(inputArray)): outputArray.append(1/(1+math.exp(inputArray[i])))
+            self.output = [1/(1+math.exp(i)) for i in inputArray]
+            return
 
         elif activationFunction == 'softmax':
-            allExponentials = []
-            allExponentialsSum = 0
-            for i in range(len(inputArray)):
-                ea = math.exp(inputArray[i])
-                allExponentials.append(ea)
-                allExponentialsSum += ea
-            for i in range(len(inputArray)): outputArray.append(allExponentials[i]/allExponentialsSum)
-        
-        self.output = outputArray
+            allSummed = sum(inputArray)
+            self.output = [i/allSummed for i in inputArray]
+            return
 
 # XOR gate truth table
 truthTable = [
