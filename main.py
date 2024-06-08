@@ -32,11 +32,7 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
             answersTargetArray.append(item[0])
 
 def oneHot(number, listLength):
-    output = []
-    for i in range(listLength):
-        if number == i: output.append(1)
-        else: output.append(0)
-    return output
+    return [0 if i != number else 1 for i in range(listLength)]
 
 def dotProduct(arrayA, arrayB):
     dotProduct = 0
