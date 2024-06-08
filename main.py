@@ -38,6 +38,11 @@ def oneHot(number, listLength):
         else: output.append(0)
     return output
 
+def dotProduct(arrayA, arrayB):
+    dotProduct = 0
+    for aValue, bValue in zip(arrayA, arrayB): dotProduct += aValue * bValue
+    return dotProduct
+
 class Layer():
     """
     A class to represent a hidden or output layer of a neural network
@@ -81,16 +86,14 @@ class Layer():
         --------
         self.output         : The vector output of the layer, accessible with self.output
         """
+        
+        # Must test if list comprehension is faster
+        
         output = []
-
-        for i in range(self.nNeurons):
+        for n in range(self.nNeurons):
             outputBatch = 0
-            for x in range(len(inputs)): outputBatch += inputs[x] * self.weights[i][x]
-
-            # Need to test if enum is faster
-            # for x, value in enumerate(inputs): outputBatch += value * self.weights[i][x]
-            
-            output.append(outputBatch + self.biases[i])
+            for value, weight in zip(inputs, self.weights[n]): outputBatch += value * weight
+            output.append(outputBatch + self.biases[n])
         
         self.output = output
 
