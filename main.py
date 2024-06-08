@@ -1,4 +1,6 @@
 import csv, random, time, os, math
+from itertools import starmap
+from operator import mul
 
 # if os.name == 'nt': os.system('cls')
 # elif os.name == 'posix': os.system('clear')
@@ -31,13 +33,9 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
             targetArray.append(item[1:])
             answersTargetArray.append(item[0])
 
-def oneHot(number, listLength):
-    return [0 if i != number else 1 for i in range(listLength)]
+def oneHot(number, listLength): return [0 if i != number else 1 for i in range(listLength)]
 
-def dotProduct(arrayA, arrayB):
-    dotProduct = 0
-    for aValue, bValue in zip(arrayA, arrayB): dotProduct += aValue * bValue
-    return dotProduct
+def dotProduct(arrayA, arrayB): return sum(starmap(mul,zip(arrayA,arrayB)))
 
 class Layer():
     """
@@ -126,14 +124,11 @@ truthTable = [
     [1,1,0]
 ]
 
-data = []
-answers = []
+data = [scenario[0:2] for scenario in truthTable]
+answers = [scenario[2] for scenario in truthTable]
 
 print('Truth Table')
-for i in range(len(truthTable)):
-    data.append(truthTable[i][0:2])
-    answers.append(truthTable[i][2])
-    print(truthTable[i])
+for scenario in truthTable: print(scenario)
 print()
 
 # For understanding back propagation
@@ -157,7 +152,7 @@ for i in range(1):
 
     # Calculate Cost
     cost = 0
-    for n in range(len(output.output)):
-        cost += (output.output[n]-answer[n]) ** 2
+    for n, output in enumerate(output.output):
+        cost += (output - answer[n]) ** 2
     
     print(f'Cost: {cost}')
