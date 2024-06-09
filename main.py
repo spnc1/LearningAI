@@ -1,9 +1,10 @@
 import csv, random, time, os, math
 from itertools import starmap
-from operator import mul
 
 # if os.name == 'nt': os.system('cls')
 # elif os.name == 'posix': os.system('clear')
+
+multiply = lambda x, y : x * y
 
 data = []
 answers = []
@@ -35,7 +36,7 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
 
 def oneHot(number, listLength): return [0 if i != number else 1 for i in range(listLength)]
 
-def dotProduct(arrayA, arrayB): return sum(starmap(mul,zip(arrayA,arrayB)))
+def dotProduct(arrayA, arrayB): return sum(starmap(multiply, zip(arrayA,arrayB)))
 
 class Layer():
     """
@@ -81,8 +82,6 @@ class Layer():
         self.output         : The vector output of the layer, accessible with self.output
         """
         
-        # Must test if list comprehension is faster
-        
         output = []
         for n in range(self.nNeurons):
             outputBatch = 0
@@ -99,7 +98,7 @@ class activationLayer():
             self.output = inputArray
             return
 
-        if activationFunction == 'relu':
+        elif activationFunction == 'relu':
             self.output = [i if i > 0 else 0 for i in inputArray]
             return
 
@@ -112,8 +111,9 @@ class activationLayer():
             return
 
         elif activationFunction == 'softmax':
-            allSummed = sum(inputArray)
-            self.output = [i/allSummed for i in inputArray]
+            eSum = 0
+            for value in inputArray: eSum += math.exp(value)
+            self.output = [math.exp(value)/eSum for value in inputArray]
             return
 
 # XOR gate truth table
@@ -131,28 +131,21 @@ print('Truth Table')
 for scenario in truthTable: print(scenario)
 print()
 
-# For understanding back propagation
-for i in range(1):
+inputLayer = data[0]
+expectedOutputLayer = answers[0]
+outputLayer = Layer(len(inputLayer), 2)
+outputLayer.forwardPropagation(inputLayer)
+output = activationLayer(outputLayer.output, 'Softmax')
+answer = oneHot(expectedOutputLayer, 2)
 
-    # 1 pass through
-    inputLayer = data[i]
-    expectedOutputLayer = answers[i]
+for weight, bias in zip(outputLayer.weights, outputLayer.biases):
+    print(f'Weights: {weight} | Bias: {bias}')
 
-    h1 = Layer(len(inputLayer), 2)
-    h1.forwardPropagation(inputLayer)
-    z1 = activationLayer(h1.output, 'ReLU')
+print(f'Output: {output.output}, Expected Answer: {answer}\n')
 
-    outputLayer = Layer(len(z1.output), 2)
-    outputLayer.forwardPropagation(z1.output)
-    output = activationLayer(outputLayer.output, 'Softmax')
+# Calculate Cost
+cost = 0
+for n, output in enumerate(output.output):
+    cost += (output - answer[n]) ** 2
 
-    answer = oneHot(expectedOutputLayer, 2)
-
-    print(f'Output: {output.output}, Expected Answer: {answer}\n')
-
-    # Calculate Cost
-    cost = 0
-    for n, output in enumerate(output.output):
-        cost += (output - answer[n]) ** 2
-    
-    print(f'Cost: {cost}')
+print(f'Cost: {cost}')
