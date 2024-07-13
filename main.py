@@ -1,11 +1,12 @@
 import csv, random, time, os, math
-from itertools import starmap
 
-# if os.name == 'nt': os.system('cls')
-# elif os.name == 'posix': os.system('clear')
+if os.name == 'nt': os.system('cls')
+elif os.name == 'posix': os.system('clear')
 
 data = []
 answers = []
+
+# Tool Functions
 
 def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
     """
@@ -31,27 +32,32 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
         for item in reader:
             targetArray.append(item[1:])
             answersTargetArray.append(item[0])
-
 oneHot = lambda number, listLength: [0 if i != number else 1 for i in range(listLength)]
 
 class Layer():
-    """
-    A class to represent a hidden or output layer of a neural network
+    def __init__(self, nInputs: int, nNeurons: int, activationFunction: str = ''):
+        """
+        A class to represent a hidden or output layer of a neural network
 
-    Attributes
-    ----------
-    nInputs             : The amount of neurons in the previous layer (Size of input layer)
-    nNeurons            : The amount of Neurons in the current layer (Size of this layer)
-    weights             : The weight matrix
-    biases              : The bias vector
-    output              : The layer output
+        Parameters
+        ----------
+        nInputs             : The amount of neurons in the previous layer (Size of input layer)
+        nNeurons            : The amount of Neurons in the current layer (Size of this layer)
+        activationFunction  : Activation function applied
 
-    Methods
-    -------
-    forwardPropagation  : Takes an input layer and an activation function choice and saves the output to self.output
-    """
+        Attributes
+        ----------
+        nInputs             : The amount of neurons in the previous layer (Size of input layer)
+        nNeurons            : The amount of Neurons in the current layer (Size of this layer)
+        weights             : The weight matrix
+        biases              : The bias vector
+        output              : The layer output
+        activationFunction  : Activation function applied
 
-    def __init__(self, nInputs: int, nNeurons: int):
+        Methods
+        -------
+        forwardPropagation  : Takes an input layer and applies a forward pass to the layer, saving the output to self.output
+        """
 
         # Generate a matrix of weights with nInputs width and nNeurons height
         weights = [[0.025*random.uniform(-0.5,0.5) for x in range(nInputs)] for y in range(nNeurons)]
@@ -64,6 +70,7 @@ class Layer():
         self.nNeurons = nNeurons
         self.weights = weights
         self.biases = biases
+        self.activationFunction = activationFunction.lower()
     
     def forwardPropagation(self, inputs: list[float]):
         """
@@ -83,24 +90,20 @@ class Layer():
             outputBatch = 0
             for value, weight in zip(inputs, self.weights[n]): outputBatch += value * weight
             output.append(outputBatch + self.biases[n])
-        
-        self.output = output
 
-class activationLayer():
-    def __init__(self, inputArray: list[float], activationFunction: str = ''):
-        match activationFunction.lower():
-            case '': self.output = inputArray
+        match self.activationFunction:
+            case '': self.output = output
 
-            case 'relu': self.output = [i if i > 0 else 0 for i in inputArray]
+            case 'relu': self.output = [i if i > 0 else 0 for i in output]
 
-            case 'leaky relu': self.output = [i if i > 0 else 0.01*i for i in inputArray]
+            case 'leaky relu': self.output = [i if i > 0 else 0.01*i for i in output]
 
-            case 'logistic sigmoid': self.output = [1/(1+math.exp(i)) for i in inputArray]
+            case 'logistic sigmoid': self.output = [1/(1+math.exp(i)) for i in output]
 
             case 'softmax':
                 eSum = 0
-                for value in inputArray: eSum += math.exp(value)
-                self.output = [math.exp(value)/eSum for value in inputArray]
+                for value in output: eSum += math.exp(value)
+                self.output = [math.exp(value)/eSum for value in output]
 
 # XOR gate truth table
 truthTable = [
@@ -109,29 +112,20 @@ truthTable = [
     [1,0,1],
     [1,1,0]
 ]
-
 data = [scenario[0:2] for scenario in truthTable]
 answers = [scenario[2] for scenario in truthTable]
-
-print('Truth Table')
-for scenario in truthTable: print(scenario)
-print()
-
 inputLayer = data[0]
-expectedOutputLayer = answers[0]
-outputLayer = Layer(len(inputLayer), 2)
+answers = oneHot(answers[0], 2)
+
+outputLayer = Layer(len(inputLayer), 2, 'Softmax')
+for weight, bias in zip(outputLayer.weights, outputLayer.biases): print(f'Weights: {weight} | Bias: {bias}')
+
 outputLayer.forwardPropagation(inputLayer)
-output = activationLayer(outputLayer.output, 'Softmax')
-answer = oneHot(expectedOutputLayer, 2)
-
-for weight, bias in zip(outputLayer.weights, outputLayer.biases):
-    print(f'Weights: {weight} | Bias: {bias}')
-
-print(f'Output: {output.output}, Expected Answer: {answer}\n')
 
 # Calculate Cost
 cost = 0
-for n, output in enumerate(output.output):
-    cost += (output - answer[n]) ** 2
+for n, output in enumerate(outputLayer.output):
+    cost += (output - answers[n]) ** 2
 
+print(f'Output: {outputLayer.output}, Expected Answer: {answers}\n')
 print(f'Cost: {cost}')
