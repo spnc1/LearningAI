@@ -34,9 +34,7 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
             targetArray.append(item[1:])
             answersTargetArray.append(item[0])
 
-def oneHot(number, listLength): return [0 if i != number else 1 for i in range(listLength)]
-
-def dotProduct(arrayA, arrayB): return sum(starmap(multiply, zip(arrayA,arrayB)))
+oneHot = lambda number, listLength: [0 if i != number else 1 for i in range(listLength)]
 
 class Layer():
     """
