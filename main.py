@@ -4,8 +4,6 @@ from itertools import starmap
 # if os.name == 'nt': os.system('cls')
 # elif os.name == 'posix': os.system('clear')
 
-multiply = lambda x, y : x * y
-
 data = []
 answers = []
 
@@ -90,29 +88,19 @@ class Layer():
 
 class activationLayer():
     def __init__(self, inputArray: list[float], activationFunction: str = ''):
-        activationFunction = activationFunction.lower()
-        
-        if activationFunction == '':
-            self.output = inputArray
-            return
+        match activationFunction.lower():
+            case '': self.output = inputArray
 
-        elif activationFunction == 'relu':
-            self.output = [i if i > 0 else 0 for i in inputArray]
-            return
+            case 'relu': self.output = [i if i > 0 else 0 for i in inputArray]
 
-        elif activationFunction == 'leaky relu':
-            self.output = [i if i > 0 else 0.01*i for i in inputArray]
-            return
+            case 'leaky relu': self.output = [i if i > 0 else 0.01*i for i in inputArray]
 
-        elif activationFunction == 'logistic sigmoid':
-            self.output = [1/(1+math.exp(i)) for i in inputArray]
-            return
+            case 'logistic sigmoid': self.output = [1/(1+math.exp(i)) for i in inputArray]
 
-        elif activationFunction == 'softmax':
-            eSum = 0
-            for value in inputArray: eSum += math.exp(value)
-            self.output = [math.exp(value)/eSum for value in inputArray]
-            return
+            case 'softmax':
+                eSum = 0
+                for value in inputArray: eSum += math.exp(value)
+                self.output = [math.exp(value)/eSum for value in inputArray]
 
 # XOR gate truth table
 truthTable = [
