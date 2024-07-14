@@ -4,10 +4,9 @@ if os.name == 'nt': os.system('cls')
 elif os.name == 'posix': os.system('clear')
 
 data = []
-answers = []
+y = []
 
 # Tool Functions
-
 def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
     """
     Takes a file path of training data and saves it to 2 arrays, a data and an answers array.
@@ -105,6 +104,19 @@ class Layer():
                 for value in output: eSum += math.exp(value)
                 self.output = [math.exp(value)/eSum for value in output]
 
+    def backwardPropagation(self, previousLayer):
+        dB = []
+        for n, output in enumerate(self.output): dB.append(2*(output-y[n]))
+        dW = [neuronDeriv * previousNeuron for neuronDeriv, previousNeuron in zip(dB, previousLayer)]
+
+        # Update Weights
+        for i, (weightDeriv, weightSet) in enumerate(zip(dW, self.weights)):
+            for j, weight in enumerate(weightSet): self.weights[i][j] = weight - LR * weightDeriv
+        
+        for i, (biasDeriv, bias) in enumerate(zip(dB, self.biases)):
+            self.biases[i] = bias - LR * biasDeriv
+
+
 # XOR gate truth table
 truthTable = [
     [0,0,0],
@@ -113,19 +125,24 @@ truthTable = [
     [1,1,0]
 ]
 data = [scenario[0:2] for scenario in truthTable]
-answers = [scenario[2] for scenario in truthTable]
-inputLayer = data[0]
-answers = oneHot(answers[0], 2)
+y = [scenario[1] for scenario in truthTable]
+inputLayer = data[1]
+y = oneHot(y[1], 2)
 
-outputLayer = Layer(len(inputLayer), 2, 'Softmax')
+LR = 0.05
+
+outputLayer = Layer(len(inputLayer), 2)
 for weight, bias in zip(outputLayer.weights, outputLayer.biases): print(f'Weights: {weight} | Bias: {bias}')
 
-outputLayer.forwardPropagation(inputLayer)
+for i in range(10000):
+    outputLayer.forwardPropagation(inputLayer)
+    cost = 0
+    for i, output in enumerate(outputLayer.output): cost += (output - y[i]) ** 2
+    outputLayer.backwardPropagation(inputLayer)
 
-# Calculate Cost
-cost = 0
-for n, output in enumerate(outputLayer.output):
-    cost += (output - answers[n]) ** 2
+print()
+for weight, bias in zip(outputLayer.weights, outputLayer.biases): print(f'Weights: {weight} | Bias: {bias}')
+print()
 
-print(f'Output: {outputLayer.output}, Expected Answer: {answers}\n')
+print(f'Output: {outputLayer.output}, Expected Answer: {y}\n')
 print(f'Cost: {cost}')
