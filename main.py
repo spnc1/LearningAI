@@ -31,6 +31,11 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
         for item in reader:
             targetArray.append(item[1:])
             answersTargetArray.append(item[0])
+def MSE(output, expected):
+    cost = 0
+    for outputValue, expectedValue in zip(output, expected):
+        cost += (outputValue - expectedValue) ** 2
+    return cost
 oneHot = lambda number, listLength: [0 if i != number else 1 for i in range(listLength)]
 
 class Layer():
@@ -133,8 +138,7 @@ for i in range(10000):
     y = oneHot(answers[i%4], 2)
     outputLayer.forwardPropagation(inputLayer)
 
-    cost = 0
-    for n, output in enumerate(outputLayer.output): cost += (output - y[n]) ** 2
+    cost = MSE(outputLayer.output, y)
 
     if i % 100 == 0:
         print(f'\nEpoch: {i}\nWeights: {outputLayer.weights}\nBiases: {outputLayer.biases}\nCost: {cost}')
