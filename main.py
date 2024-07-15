@@ -113,36 +113,37 @@ class Layer():
         for i, (weightDeriv, weightSet) in enumerate(zip(dW, self.weights)):
             for j, weight in enumerate(weightSet): self.weights[i][j] = weight - LR * weightDeriv
         
-        for i, (biasDeriv, bias) in enumerate(zip(dB, self.biases)):
-            self.biases[i] = bias - LR * biasDeriv
+        for i, (biasDeriv, bias) in enumerate(zip(dB, self.biases)): self.biases[i] = bias - LR * biasDeriv
 
-
-# XOR gate truth table
+# AND gate truth table
 truthTable = [
     [0,0,0],
-    [0,1,1],
-    [1,0,1],
-    [1,1,0]
+    [0,1,0],
+    [1,0,0],
+    [1,1,1]
 ]
 data = [scenario[0:2] for scenario in truthTable]
-y = [scenario[1] for scenario in truthTable]
-inputLayer = data[1]
-y = oneHot(y[1], 2)
+answers = [scenario[2] for scenario in truthTable]
 
-LR = 0.05
-
-outputLayer = Layer(len(inputLayer), 2)
-for weight, bias in zip(outputLayer.weights, outputLayer.biases): print(f'Weights: {weight} | Bias: {bias}')
+LR = 0.001
+outputLayer = Layer(3, 2)
 
 for i in range(10000):
+    inputLayer = data[i%4]
+    y = oneHot(answers[i%4], 2)
     outputLayer.forwardPropagation(inputLayer)
+
     cost = 0
-    for i, output in enumerate(outputLayer.output): cost += (output - y[i]) ** 2
+    for n, output in enumerate(outputLayer.output): cost += (output - y[n]) ** 2
+
+    if i % 100 == 0:
+        print(f'\nEpoch: {i}\nWeights: {outputLayer.weights}\nBiases: {outputLayer.biases}\nCost: {cost}')
+
     outputLayer.backwardPropagation(inputLayer)
 
+# TESTING
 print()
-for weight, bias in zip(outputLayer.weights, outputLayer.biases): print(f'Weights: {weight} | Bias: {bias}')
-print()
-
-print(f'Output: {outputLayer.output}, Expected Answer: {y}\n')
-print(f'Cost: {cost}')
+for inputLayer, y in zip(data, answers):
+    outputLayer.forwardPropagation(inputLayer)
+    print(f'Output: {oneHot(outputLayer.output.index(max(outputLayer.output)), 2)}, Expected Answer: {oneHot(y, 2)}')
+    # print(f'Cost: {cost}\n')
