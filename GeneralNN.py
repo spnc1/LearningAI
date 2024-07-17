@@ -1,7 +1,5 @@
 import csv, random, time, os, math
 
-if os.name == 'nt': os.system('cls')
-elif os.name == 'posix': os.system('clear')
 
 # Tool Functions
 def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
@@ -30,10 +28,11 @@ def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
             answersTargetArray.append(item[0])
 def MSE(output, expected):
     cost = 0
-    for outputValue, expectedValue in zip(output, expected):
-        cost += (outputValue - expectedValue) ** 2
+    for outputValue, expectedValue in zip(output, expected): cost += (outputValue - expectedValue) ** 2
     return cost
 oneHot = lambda number, listLength: [0 if i != number else 1 for i in range(listLength)]
+
+learningRate = 0.001
 
 class Layer():
     def __init__(self, nInputs: int, nNeurons: int, activationFunction: str = ''):
@@ -86,12 +85,14 @@ class Layer():
         self.output         : The vector output of the layer, accessible with self.output
         """
         
+        # Run data through layer
         output = []
         for n in range(self.nNeurons):
             outputBatch = 0
             for value, weight in zip(inputs, self.weights[n]): outputBatch += value * weight
             output.append(outputBatch + self.biases[n])
 
+        # Activation Function Selection
         match self.activationFunction:
             case '': self.output = output
 
@@ -106,45 +107,36 @@ class Layer():
                 for value in output: eSum += math.exp(value)
                 self.output = [math.exp(value)/eSum for value in output]
 
-    def backwardPropagation(self, previousLayer):
+    # Back Propagation not working
+
+    def backwardPropagation(self, previousLayer, expectedValues):
         dB = []
-        for n, output in enumerate(self.output): dB.append(2*(output-y[n]))
+        for n, output in enumerate(self.output): dB.append(2*(output-expectedValues[n]))
         dW = [neuronDeriv * previousNeuron for neuronDeriv, previousNeuron in zip(dB, previousLayer)]
 
         # Update Weights
         for i, (weightDeriv, weightSet) in enumerate(zip(dW, self.weights)):
-            for j, weight in enumerate(weightSet): self.weights[i][j] = weight - LR * weightDeriv
+            for j, weight in enumerate(weightSet): self.weights[i][j] = weight - learningRate * weightDeriv
         
-        for i, (biasDeriv, bias) in enumerate(zip(dB, self.biases)): self.biases[i] = bias - LR * biasDeriv
+        for i, (biasDeriv, bias) in enumerate(zip(dB, self.biases)): self.biases[i] = bias - learningRate * biasDeriv
 
-# AND gate truth table
-truthTable = [
-    [0,0,0],
-    [0,1,0],
-    [1,0,0],
-    [1,1,1]
-]
-data = [scenario[0:2] for scenario in truthTable]
-answers = [scenario[2] for scenario in truthTable]
+    def outputLayerBackPropagation(self, previousLayer, expectedValues):
+        match self.activationFunction:
+            case '':
+                dBiases = [2 * (outputValue - expectedValue) for outputValue, expectedValue in zip(self.output, expectedValues)]
+                dWeights = [dBias * previousNeuron for dBias, previousNeuron in zip(dBiases, previousLayer)]
+            
+            case 'relu':
+                dBiases = [2 * (outputValue - expectedValue) if 2 * (outputValue - expectedValue) < 0 else 0 for outputValue, expectedValue in zip(self.output, expectedValues)]
+                dWeights = [2 * (outputValue - expectedValue) if 2 * (outputValue - expectedValue) * previousNeuron < 0 else 0 for previousNeuron, (outputValue, expectedValue) in zip(previousLayer, zip(self.output, expectedValues))]
 
-LR = 0.001
-outputLayer = Layer(3, 2)
+            case 'leaky relu':
+                dBiases = [1 if 2 * (outputValue - expectedValue) > -0.1 else 0 for outputValue, expectedValue in zip(self.output, expectedValues)]
+                dWeights = [1 if 2 * (outputValue - expectedValue) * previousNeuron > 0 else -0.1 for previousNeuron, (outputValue, expectedValue) in zip(previousLayer, zip(self.output, expectedValues))]
+            
+        # Update Weights & Biases
+        for i, (dWeight, weightSet) in enumerate(zip(dWeights, self.weights)):
+            for j, weight in enumerate(weightSet): self.weights[i][j] = weight - learningRate * dWeight
+        for i, (dBias, bias) in enumerate(zip(dBiases, self.biases)): self.biases[i] = bias - learningRate * dBias
 
-for i in range(10000):
-    inputLayer = data[i%4]
-    y = oneHot(answers[i%4], 2)
-    outputLayer.forwardPropagation(inputLayer)
-
-    cost = MSE(outputLayer.output, y)
-
-    if i % 100 == 0:
-        print(f'\nEpoch: {i}\nWeights: {outputLayer.weights}\nBiases: {outputLayer.biases}\nCost: {cost}')
-
-    outputLayer.backwardPropagation(inputLayer)
-
-# TESTING
-print()
-for inputLayer, y in zip(data, answers):
-    outputLayer.forwardPropagation(inputLayer)
-    print(f'Output: {oneHot(outputLayer.output.index(max(outputLayer.output)), 2)}, Expected Answer: {oneHot(y, 2)}')
-    # print(f'Cost: {cost}\n')
+    def getParameters(self): return self.weights, self.biases
