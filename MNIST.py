@@ -64,7 +64,14 @@ def forwardPropagation(Z0, W1, W2, B1, B2):
 
     return Z1, A1, Z2, A2
 
-# def backwardPropagation(Z1, W1, B1, A1, Z2, W2, B2, A2, Y):
+def backwardPropagation(Z1, W1, B1, A1, Z2, W2, B2, A2, Y):
+    y = pd.DataFrame(Y.iloc[:,0])
+    dZ2 = 2 * (A2 - y) * dSoftMax(A2)
+
+    dW2 = dZ2 * A1
+    dB2 = dZ2
+
+    print(dZ2)
 
 labels, data = getData(MNISTdata.testingData)
 
@@ -73,5 +80,7 @@ Z0 = pd.DataFrame(data.iloc[:, 0]).reset_index(drop=True)
 Z1, A1, Z2, A2 = forwardPropagation(Z0, W1, W2, B1, B2)
 
 Y = DataFrameOneHot(labels)
+# print(Y)
+# Y.columns = ['', '0']
 
-# backwardPropagation(Z1, W1, B1, A1, Z2, W2, B2, A2)
+backwardPropagation(Z1, W1, B1, A1, Z2, W2, B2, A2, Y)
