@@ -3,9 +3,6 @@ import csv, random, time, os, math
 if os.name == 'nt': os.system('cls')
 elif os.name == 'posix': os.system('clear')
 
-data = []
-y = []
-
 # Tool Functions
 def readCsv(filepath: str, targetArray: list, answersTargetArray: list):
     """
