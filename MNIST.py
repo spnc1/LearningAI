@@ -96,10 +96,10 @@ losses = []
 def gradientDescent(W1, b1, W2, b2, data, labels, learningRate, epochs):
     for epoch in range(epochs):
         for i in range(data.shape[1]):
-            # if i % 10000 == 0:
-            #     loss = testModelLoss(data, labels, W1, b1, W2, b2)
-            #     print(f'Iteration {(epoch * 60000) + i}\nLoss: {loss}\n')
-            #     losses.append(loss)
+            if i % 10000 == 0:
+                loss = testModelLoss(data, labels, W1, b1, W2, b2)
+                print(f'Iteration {(epoch * 60000) + i}\nLoss: {loss}\n')
+                losses.append(loss)
 
             X = data[:, i].reshape(784, 1)
             Y = labels[:, i].reshape(10, 1)
@@ -109,7 +109,7 @@ def gradientDescent(W1, b1, W2, b2, data, labels, learningRate, epochs):
 
     return W1, b1, W2, b2
 
-W1, b1, W2, b2 = gradientDescent(baseW1, baseb1, baseW2, baseb2, trainingX, trainingY, 0.001, 2)
+W1, b1, W2, b2 = gradientDescent(baseW1, baseb1, baseW2, baseb2, trainingX, trainingY, 0.0005, 4)
 testAccuracy = testModelAccuracy(testingX, testingY, W1, b1, W2, b2)
 print(f'Test Data Accuracy {testAccuracy}')
 trainingAccuracy = testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2)
