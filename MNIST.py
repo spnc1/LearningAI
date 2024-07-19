@@ -48,11 +48,22 @@ def forwardPropagation(W1, b1, W2, b2, Z0):
     # Z0 currently a row vector not a column vector
     Z0 = Z0.reshape(784,1)
 
-    Z1 = np.dot(W1, Z0) + b1
+    Z1 = W1 @ Z0 + b1
     A1 = LeakyReLU(Z1, 0.1)
-    Z2 = W2.dot(Z1) + b2
+    Z2 = W2 @ Z1 + b2
     A2 = StableSoftMax(Z2)
-    return Z1, A1, Z2, A2
+    return Z0, Z1, A1, Z2, A2
+
+def backPropagation(Z0, Z1, A1, A2, W1, W2, Y):
+    # Y currently a row vector not a column vector
+    Y = Y.reshape(10,1)
+
+    dZ2 = A2 - Y
+    dW2 = dZ2 @ A1.T
+    dZ1 = W2.T @ dZ2 * dLeakyReLU(Z1, 0.1)
+    dW1 = dZ1 @ Z0.T
+    return dW1, dZ1, dW2, dZ2
 
 W1, b1, W2, b2 = initialiseParameters()
-Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, testingX[:, 0])
+Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, testingX[:, 0])
+dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W1, W2, testingY[:,0])
