@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import random, math
 import MNISTdata
 
 def getData(filePath):
@@ -66,7 +65,16 @@ def updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate):
 
     return W1, b1, W2, b2
 
-def testModel(data, labels, W1, b1, W2, b2):
+def testModelLoss(data, labels, W1, b1, W2, b2):
+    losses = []
+    for i in range(data.shape[1]):
+        testX = data[:, i].reshape(784, 1)
+        testY = labels[:, i].reshape(10, 1)
+        Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, testX)
+        losses.append(CategoricalCrossEntropyLoss(A2, testY))
+    return sum(losses) / data.shape[1]
+
+def testModelAccuracy(data, labels, W1, b1, W2, b2):
     count = 0
     for i in range(data.shape[1]):
         testX = data[:, i].reshape(784, 1)
@@ -77,20 +85,32 @@ def testModel(data, labels, W1, b1, W2, b2):
     
     return count / data.shape[1]
 
+def CategoricalCrossEntropyLoss(Output, Y, epsilon = 1e-15):
+    clippedOutput = np.clip(Output, epsilon, 1 - epsilon)
+    return -np.sum(Y * np.log(clippedOutput))
+
 baseW1, baseb1, baseW2, baseb2 = initialiseParameters()
+
+losses = []
 
 def gradientDescent(W1, b1, W2, b2, data, labels, learningRate, epochs):
     for epoch in range(epochs):
         for i in range(data.shape[1]):
+            # if i % 10000 == 0:
+            #     loss = testModelLoss(data, labels, W1, b1, W2, b2)
+            #     print(f'Iteration {(epoch * 60000) + i}\nLoss: {loss}\n')
+            #     losses.append(loss)
+
             X = data[:, i].reshape(784, 1)
             Y = labels[:, i].reshape(10, 1)
             Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, X)
             dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W2, Y)
             W1, b1, W2, b2 = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate)
 
-            if i % 10000 == 0: print(f'Epoch: {epoch + 1} | Iteration : {i}\n{np.argmax(Y, 0)[0]} -> Predicted {np.argmax(A2, 0)[0]}\n')
-    
     return W1, b1, W2, b2
 
-W1, b1, W2, b2 = gradientDescent(baseW1, baseb1, baseW2, baseb2, trainingX, trainingY, 0.04, 1)
-print(f'Accuracy on testing data: {testModel(testingX, testingY, W1, b1, W2, b2) * 100}%')
+W1, b1, W2, b2 = gradientDescent(baseW1, baseb1, baseW2, baseb2, trainingX, trainingY, 0.001, 2)
+testAccuracy = testModelAccuracy(testingX, testingY, W1, b1, W2, b2)
+print(f'Test Data Accuracy {testAccuracy}')
+trainingAccuracy = testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2)
+print(f'Training Data Accuracy {trainingAccuracy}')
