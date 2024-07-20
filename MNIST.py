@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import MNISTdata
 
+import matplotlib.pyplot as plt
+
 def getData(filePath):
     data = pd.read_csv(filePath).to_numpy().T
     labels = data[0]
@@ -14,16 +16,16 @@ def oneHot(array, oneHotLength):
 
 # TrainingY (60000x1) | TrainingX (784x60000)
 # TestingY (10000x1) | TestingX (784x10000)
-trainingY, trainingX = getData(MNISTdata.trainingData)
-trainingY = oneHot(trainingY, 10)
+# trainingY, trainingX = getData(MNISTdata.trainingData)
+# trainingY = oneHot(trainingY, 10)
 testingY, testingX = getData(MNISTdata.testingData)
 testingY = oneHot(testingY, 10)
 
 # Activation Functions + Derivatives
 def ReLU(array): return np.maximum(array, 0)
 def dReLU(array): return (array > 0) * 1
-def LeakyReLU(array, alpha): return np.maximum(array * alpha, array)
-def dLeakyReLU(array, alpha): return np.where(array > 0, 1, alpha)
+def LeakyReLU(array, decay = 0.1): return np.maximum(array * decay, array)
+def dLeakyReLU(array, decay = 0.1): return np.where(array > 0, 1, decay)
 
 def SoftMax(array): return np.exp(array) / sum(np.exp(array))
 def dSoftMax(array): return SoftMax(array) * (1 - SoftMax(array))
@@ -43,6 +45,7 @@ def initialiseParameters():
 
     return W1, b1, W2, b2
 
+# Propagation Functions
 def forwardPropagation(W1, b1, W2, b2, Z0):
     Z1 = W1 @ Z0 + b1
     A1 = LeakyReLU(Z1, 0.1)
@@ -65,6 +68,15 @@ def updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate):
 
     return W1, b1, W2, b2
 
+def batchData(data, labels, batchSize, axis):
+    if data.shape[axis] % batchSize != 0: raise ValueError(f'Data of shape {data.shape} is not divisible along axis {axis} by {batchSize}')
+    splits = data.shape[axis] // batchSize
+    splitData = np.array(np.split(data, splits, axis))
+    splitLabels = np.array(np.split(labels, splits, axis))
+    
+    return splitData, splitLabels
+
+# Testing Functions
 def testModelLoss(data, labels, W1, b1, W2, b2):
     losses = []
     for i in range(data.shape[1]):
@@ -89,28 +101,7 @@ def CategoricalCrossEntropyLoss(Output, Y, epsilon = 1e-15):
     clippedOutput = np.clip(Output, epsilon, 1 - epsilon)
     return -np.sum(Y * np.log(clippedOutput))
 
-baseW1, baseb1, baseW2, baseb2 = initialiseParameters()
+# W1, b1, W2, b2 = initialiseParameters()
+testingX, testingY = batchData(testingX, testingY, 10, 1)
 
-losses = []
-
-def gradientDescent(W1, b1, W2, b2, data, labels, learningRate, epochs):
-    for epoch in range(epochs):
-        for i in range(data.shape[1]):
-            if i % 10000 == 0:
-                loss = testModelLoss(data, labels, W1, b1, W2, b2)
-                print(f'Iteration {(epoch * 60000) + i}\nLoss: {loss}\n')
-                losses.append(loss)
-
-            X = data[:, i].reshape(784, 1)
-            Y = labels[:, i].reshape(10, 1)
-            Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, X)
-            dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W2, Y)
-            W1, b1, W2, b2 = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate)
-
-    return W1, b1, W2, b2
-
-W1, b1, W2, b2 = gradientDescent(baseW1, baseb1, baseW2, baseb2, trainingX, trainingY, 0.0005, 4)
-testAccuracy = testModelAccuracy(testingX, testingY, W1, b1, W2, b2)
-print(f'Test Data Accuracy {testAccuracy}')
-trainingAccuracy = testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2)
-print(f'Training Data Accuracy {trainingAccuracy}')
+print(testingY[0])
