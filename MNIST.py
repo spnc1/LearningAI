@@ -1,9 +1,8 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import math, datetime, os
+import math, os
 import MNISTdata
-
-import matplotlib.pyplot as plt
 
 def getData(filePath):
     data = pd.read_csv(filePath).to_numpy().T
@@ -81,19 +80,35 @@ def batchData(data, labels, batchSize, axis = 1):
     
     return splitData, splitLabels
 
+def plotLoss(losses, iterations):
+    plt.title('Loss vs Iterations')
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.plot(iterations, losses)
+    plt.show()
+
 def gradientDescent(W1, b1, W2, b2, X, Y, *, learningRate, epochs, decay, patience):
+    batches = Y.shape[0]
+    batchSize = Y.shape[2]
+    dataSetSize = batches * batchSize
+
+    losses, iterations = [], []
     bestLoss = float('inf')
-    for epoch in range(epochs):        
-        for i in range(Y.shape[0]):
+
+    for epoch in range(epochs):
+        # Gradient Descent   
+        for i in range(batches):
             x, y = X[i], Y[i]
             Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, x)
             dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W2, y)
             W1, b1, W2, b2 = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate)
         
+        # Loss
         loss = testModelLoss(trainingX, trainingY, W1, b1, W2, b2)
-        
+        losses.append(loss), iterations.append(epoch * dataSetSize)
         print(f'Epoch {epoch + 1}{" " * (3 - math.floor(math.log10(epoch + 1)))} | Loss: {loss}')
 
+        # Patience
         if loss <= bestLoss: bestLoss, patienceCount = loss, 0
         else: patienceCount += 1
         if patienceCount >= patience:
@@ -101,6 +116,8 @@ def gradientDescent(W1, b1, W2, b2, X, Y, *, learningRate, epochs, decay, patien
             break
 
         learningRate = round(learningRate * decay, 6)
+
+    plotLoss(losses, iterations)
 
     return W1, b1, W2, b2
 
@@ -140,8 +157,9 @@ def loadParameters(path):
 
 # Model
 batchedX, batchedY = batchData(trainingX, trainingY, 15)
+
 W1, b1, W2, b2 = initialiseParameters()
-W1, b1, W2, b2 = gradientDescent(W1, b1, W2, b2, batchedX, batchedY, learningRate=0.0015, epochs=200, decay=0.96, patience=5)
+W1, b1, W2, b2 = gradientDescent(W1, b1, W2, b2, batchedX, batchedY, learningRate=0.0015, epochs=100, decay=0.96, patience=5)
 
 print(f'\nAccuracy on training set {round(testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2) * 100, 2)}')
 print(f'Accuracy on testing set {round(testModelAccuracy(testingX, testingY, W1, b1, W2, b2) * 100, 2)}')
