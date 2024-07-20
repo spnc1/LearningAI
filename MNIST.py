@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math, datetime, os
 import MNISTdata
 
 import matplotlib.pyplot as plt
@@ -28,10 +29,10 @@ def dReLU(array): return (array > 0) * 1
 def LeakyReLU(array, decay = 0.1): return np.maximum(array * decay, array)
 def dLeakyReLU(array, decay = 0.1): return np.where(array > 0, 1, decay)
 
-def SoftMax(array): return np.exp(array) / sum(np.exp(array))
+def SoftMax(array): return np.exp(array) / sum(np.exp(array), axis=0)
 def StableSoftMax(array):
-    exp = np.exp(array - np.max(array, axis=0, keepdims=True))
-    return exp / np.sum(exp)
+    exp = np.exp(array - np.max(array, axis=0))
+    return exp / np.sum(exp, axis=0)
 
 # Propagation Functions
 def initialiseParameters():
@@ -80,16 +81,33 @@ def batchData(data, labels, batchSize, axis = 1):
     
     return splitData, splitLabels
 
+def gradientDescent(W1, b1, W2, b2, X, Y, *, learningRate, epochs, decay, patience):
+    bestLoss = float('inf')
+    for epoch in range(epochs):        
+        for i in range(Y.shape[0]):
+            x, y = X[i], Y[i]
+            Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, x)
+            dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W2, y)
+            W1, b1, W2, b2 = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate)
+        
+        loss = testModelLoss(trainingX, trainingY, W1, b1, W2, b2)
+        
+        print(f'Epoch {epoch + 1}{" " * (3 - math.floor(math.log10(epoch + 1)))} | Loss: {loss}')
+
+        if loss <= bestLoss: bestLoss, patienceCount = loss, 0
+        else: patienceCount += 1
+        if patienceCount >= patience:
+            print(f'\nSTOPPING TRAINING AT EPOCH {epoch + 1}')
+            break
+
+        learningRate = round(learningRate * decay, 6)
+
+    return W1, b1, W2, b2
+
 # Testing Functions
 def testModelLoss(X, Y, W1, b1, W2, b2):
-    losses = []
-    for i in range(Y.shape[0]):
-        lossX = X[i]
-        lossY = Y[i]
-        
-        Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, lossX)
-        losses.append(CategoricalCrossEntropyLoss(A2, lossY))
-    return sum(losses) / Y.shape[0]
+    Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, X)
+    return CategoricalCrossEntropyLoss(A2, Y)
 
 def testModelAccuracy(data, labels, W1, b1, W2, b2):
     count = 0
@@ -106,31 +124,27 @@ def CategoricalCrossEntropyLoss(Output, Y, epsilon = 1e-15):
     clippedOutput = np.clip(Output, epsilon, 1 - epsilon)
     return np.mean(-np.sum(Y * np.log(clippedOutput), axis=0))
 
-def gradientDescent(W1, b1, W2, b2, X, Y, *, learningRate, epochs):
-    for epoch in range(epochs):
-        for i in range(Y.shape[0]):
-            x = X[i]
-            y = Y[i]
+# Save/Load Network Functions
+def saveParameters(path, W1, b1, W2, b2):
+    if not os.path.exists(path): print('Path not found, folder created'), os.mkdir(path)
 
-            Z0, Z1, A1, Z2, A2 = forwardPropagation(W1, b1, W2, b2, x)
-            dW1, db1, dW2, db2 = backPropagation(Z0, Z1, A1, A2, W2, y)
-            W1, b1, W2, b2 = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, learningRate)
+    pd.DataFrame(W1).to_csv(path, index=False, sep=',')
+    pd.DataFrame(b1).to_csv(path, index=False, sep=',')
+    pd.DataFrame(W2).to_csv(path, index=False, sep=',')
+    pd.DataFrame(b2).to_csv(path, index=False, sep=',')
 
-            # if i == 20000:
-            #     print(dW1.shape)
-            #     print(db1.shape)
-            #     print(dW2.shape)
-            #     print(db2.shape)
-                # print(CategoricalCrossEntropyLoss(A2, y))
-    
-    return W1, b1, W2, b2
+def loadParameters(path):
+    parameters = []
+    for filename in os.listdir(path): parameters.append(pd.read_csv(os.path.join(path, filename)).to_numpy())
+    return parameters[0], parameters[1], parameters[2], parameters[3]
 
-batchedX, batchedY = batchData(trainingX, trainingY, 2)
-
+# Model
+batchedX, batchedY = batchData(trainingX, trainingY, 15)
 W1, b1, W2, b2 = initialiseParameters()
-print(testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2))
+W1, b1, W2, b2 = gradientDescent(W1, b1, W2, b2, batchedX, batchedY, learningRate=0.0015, epochs=200, decay=0.96, patience=5)
 
-W1, b1, W2, b2 = gradientDescent(W1, b1, W2, b2, batchedX, batchedY, learningRate=0.001, epochs=1)
-print(W1.shape, b1.shape)
-print(W2.shape, b2.shape)
-print(testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2))
+print(f'\nAccuracy on training set {round(testModelAccuracy(trainingX, trainingY, W1, b1, W2, b2) * 100, 2)}')
+print(f'Accuracy on testing set {round(testModelAccuracy(testingX, testingY, W1, b1, W2, b2) * 100, 2)}')
+
+saveModel = input('Would you like to save the model? ').lower()
+if saveModel == 'y' or saveModel == 'yes': saveParameters(input('Specify file path: '), W1, b1, W2, b2)
