@@ -169,7 +169,6 @@ def saveNetwork(filePath: str, parameters: dict[str, np.ndarray], hyperParameter
     IMPORTANT: All inputs besides filePath are returned by gradientDescent()
     """
 
-
     if not os.path.exists(filePath): os.mkdir(filePath)
 
     file = open(f'{filePath}/NetworkInfo.txt', 'w')
@@ -397,8 +396,6 @@ def gradientDescent(trainingX: np.ndarray, trainingY: np.ndarray, parameters: di
     learningRate = initialLearningRate
     losses = [testModelLoss(parameters, testingX, testingY)]
     patienceCount = 0
-
-    # imageX, imageY = splitIntoImages(testingX, testingY)
 
     for epoch in range(hyperParameters['epochs']):
         for i in range(trainingY.shape[0]):
