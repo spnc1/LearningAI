@@ -119,7 +119,7 @@ def displayLossCurve(netStats: dict[str, float | int]) -> None:
     
     plt.title('Loss vs Epochs')
     plt.xlabel('Epochs'), plt.ylabel('Loss')
-    plt.plot(netStats['trainingEpochs'], netStats['losses'])
+    plt.plot(range(netStats['trainingEpochs'] + 1), netStats['losses'])
     plt.show()
 
 def simpleGetData(filePath: str, batchSize: int) -> tuple[np.ndarray]:
@@ -150,6 +150,7 @@ def simpleGetData(filePath: str, batchSize: int) -> tuple[np.ndarray]:
         splitData = np.array(np.split(data, splits, 1))
         splitLabels = np.array(np.split(labels, splits, 1))
         return data, labels, splitData, splitLabels
+    
     return data, labels
 
 
@@ -371,7 +372,7 @@ def updateParameters(parameters: dict, gradients: dict, learningRate: float):
 
     return parameters
 
-def gradientDescent(trainingX: np.ndarray, trainingY: np.ndarray, parameters: dict[str, np.ndarray], hyperParameters: dict[str, np.ndarray], testingX = '', testingY = '') -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, float | int]]:
+def gradientDescent(trainingX: np.ndarray, trainingY: np.ndarray, parameters: dict[str, np.ndarray], hyperParameters: dict[str, np.ndarray], testingX, testingY) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, float | int]]:
     """
     Performs gradient descent for network
     
@@ -405,9 +406,9 @@ def gradientDescent(trainingX: np.ndarray, trainingY: np.ndarray, parameters: di
             gradients = backPropagation(layers, parameters, y)
             parameters = updateParameters(parameters, gradients, learningRate)
 
-        if testingX != '' and testingY != '':
-            loss = testModelLoss(parameters, testingX, testingY)
-            losses.append(loss)
+        
+        loss = testModelLoss(parameters, testingX, testingY)
+        losses.append(loss)
 
         # Patience
         if loss <= bestLoss: bestLoss, patienceCount = loss, 0
@@ -417,7 +418,6 @@ def gradientDescent(trainingX: np.ndarray, trainingY: np.ndarray, parameters: di
         # Learning Rate Decay
         learningRate = round(learningRate * hyperParameters['decay'], hyperParameters['learningRateClipping'])
 
-    if testingX != '' and testingY != '': netStats = {'testAccuracy': testModelAccuracy(parameters, testingX, testingY), 'losses': losses, 'trainingEpochs': epoch + 1}
-    else: netStats = {'losses': losses, 'trainingEpochs': epoch + 1}
+    netStats = {'testAccuracy': testModelAccuracy(parameters, testingX, testingY), 'losses': losses, 'trainingEpochs': epoch + 1}
 
     return layers, parameters, netStats
